@@ -1,3 +1,5 @@
+PYTHON BOT
+
 ETH Day Trading Bot with Telegram Alerts
 This Python-based bot automatically monitors and trades ETH/USD on the Capital.com platform, using a simple trading strategy. It also sends real-time notifications to your Telegram account when buy or sell orders are executed.
 
