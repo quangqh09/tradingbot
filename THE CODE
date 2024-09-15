@@ -1,0 +1,124 @@
+import requests
+import time
+import tkinter as tk
+from tkinter import messagebox
+
+# Telegram configuration
+TELEGRAM_TOKEN = 'your_telegram_bot_token'  # From @BotFather
+CHAT_ID = 'your_chat_id'  # Your Telegram Chat ID
+
+# Capital.com API Key and base URL
+API_KEY = 'your_capital_com_api_key'
+BASE_URL = 'https://api.capital.com'
+headers = {
+    'Authorization': f'Bearer {API_KEY}',
+    'Content-Type': 'application/json'
+}
+
+# Function to send Telegram alerts
+def send_telegram_alert(message):
+    try:
+        url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
+        payload = {
+            'chat_id': CHAT_ID,
+            'text': message
+        }
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        print(f"Telegram alert sent: {message}")
+    except Exception as e:
+        print(f"Failed to send Telegram alert: {e}")
+
+# Function to get current ETH price
+def get_current_price(symbol):
+    url = f'{BASE_URL}/prices/{symbol}'
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        price_data = response.json()
+        return float(price_data['price'])
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching price: {e}")
+        return None
+
+# Function to place buy/sell order
+def place_order(order_type, symbol, amount):
+    order_data = {
+        'symbol': symbol,
+        'amount': amount,
+        'order_type': order_type,
+    }
+    try:
+        url = f'{BASE_URL}/orders'
+        response = requests.post(url, headers=headers, json=order_data)
+        response.raise_for_status()
+        print(f"Order placed: {order_type} {symbol}")
+        # Send a Telegram alert for the trade
+        send_telegram_alert(f"Order placed: {order_type} {symbol} at amount {amount}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error placing order: {e}")
+
+# Function to monitor market and trade
+def monitor_market(symbol, buy_threshold, sell_threshold):
+    while True:
+        current_price = get_current_price(symbol)
+        if current_price is None:
+            print("Could not retrieve price. Retrying in 60 seconds.")
+            time.sleep(60)  # Wait a minute before retrying
+            continue
+        
+        if current_price <= buy_threshold:
+            print(f"Buying ETH at {current_price}")
+            place_order('BUY', symbol, 0.01)  # Buying 0.01 ETH (you can adjust this)
+        elif current_price >= sell_threshold:
+            print(f"Selling ETH at {current_price}")
+            place_order('SELL', symbol, 0.01)  # Selling 0.01 ETH (adjust as needed)
+        
+        time.sleep(60)  # Check every minute
+
+# Start trading function
+def start_trading():
+    eth_symbol = 'ETH/USD'
+    current_price = get_current_price(eth_symbol)
+    
+    if current_price is None:
+        messagebox.showerror("Error", "Unable to fetch ETH price.")
+        return
+    
+    # Example thresholds: Buy if ETH drops by 2%, Sell if it rises by 2%
+    buy_price = current_price * 0.98
+    sell_price = current_price * 1.02
+    
+    print(f"Starting to monitor the market (Buy below {buy_price}, Sell above {sell_price})")
+    monitor_market(eth_symbol, buy_price, sell_price)
+
+# Stop trading function
+def stop_trading():
+    print("Trading stopped.")
+    exit(0)
+
+# Create a basic Tkinter UI for user control
+def create_ui():
+    app = tk.Tk()
+    app.title("24/7 ETH Day Trading Bot")
+    
+    # Labels
+    welcome_label = tk.Label(app, text="ETH/USD Day Trading Bot", font=("Arial", 16))
+    welcome_label.pack(pady=10)
+    
+    # Start button
+    start_button = tk.Button(app, text="Start Trading", command=start_trading, width=20, bg="green", fg="white")
+    start_button.pack(pady=10)
+    
+    # Stop button
+    stop_button = tk.Button(app, text="Stop Trading", command=stop_trading, width=20, bg="red", fg="white")
+    stop_button.pack(pady=10)
+    
+    # Run the Tkinter event loop
+    app.mainloop()
+
+# Run the UI
+create_ui()
+
+
+ADD MY CRED: QUANG HUYNH
